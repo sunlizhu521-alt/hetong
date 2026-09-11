@@ -6,6 +6,7 @@ import pytest
 from docx import Document
 from fastapi import HTTPException
 from openpyxl import Workbook
+from xlwt import Workbook as LegacyWorkbook
 
 from app.file_validation import validate_file
 from app.parsers import inspect_order, inspect_template, read_order_rows
@@ -26,6 +27,23 @@ def test_xlsx_order_inspection_deduplicates_headers(tmp_path: Path):
     headers, rows = read_order_rows(path, "订单明细")
     assert headers[1] == "商品_2"
     assert rows[0]["数量"] == 2
+
+
+def test_xls_order_inspection_and_rows(tmp_path: Path):
+    path = tmp_path / "虚构旧版订单.xls"
+    workbook = LegacyWorkbook()
+    sheet = workbook.add_sheet("旧版订单")
+    for column, value in enumerate(("商品", "数量")):
+        sheet.write(0, column, value)
+    sheet.write(1, 0, "测试商品")
+    sheet.write(1, 1, 2)
+    workbook.save(str(path))
+
+    inspection = inspect_order(path)
+    assert inspection["sheets"][0]["name"] == "旧版订单"
+    headers, rows = read_order_rows(path, "旧版订单")
+    assert headers == ["商品", "数量"]
+    assert rows == [{"商品": "测试商品", "数量": 2.0}]
 
 
 def test_docx_template_exposes_paragraph_and_table_targets(tmp_path: Path):
