@@ -31,6 +31,7 @@ printf 'HETONG_VERSION=%s\n' "$deployed_revision" > /srv/hetong/app.env
 chmod 0644 /srv/hetong/app.env
 
 install -d -o ubuntu -g ubuntu -m 0755 /srv/hetong/frontend
+chmod 0755 /srv/hetong
 find /srv/hetong/frontend -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
 cp -a "$repo_dir/frontend/dist/." /srv/hetong/frontend/
 chown -R ubuntu:ubuntu /srv/hetong

@@ -13,7 +13,7 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y \
   git python3 python3-venv python3-pip libreoffice-writer libreoffice-calc \
   poppler-utils fonts-noto-cjk fonts-noto-core
 
-install -d -o ubuntu -g ubuntu -m 0750 /srv/hetong
+install -d -o ubuntu -g ubuntu -m 0755 /srv/hetong
 install -d -o ubuntu -g ubuntu -m 0700 /srv/hetong/data
 install -d -o ubuntu -g ubuntu -m 0755 /srv/hetong/frontend
 
