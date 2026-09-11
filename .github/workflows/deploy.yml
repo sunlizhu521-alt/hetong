@@ -1,0 +1,46 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+concurrency:
+  group: hetong-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' && vars.AUTO_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+      - run: pnpm build
+        working-directory: frontend
+      - name: Deploy exact tested revision
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s' "$DEPLOY_KEY" > ~/.ssh/hetong_deploy
+          chmod 600 ~/.ssh/hetong_deploy
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+          ssh -i ~/.ssh/hetong_deploy hetong-deploy@"$DEPLOY_HOST" "deploy $DEPLOY_SHA"
+      - name: Online acceptance
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: curl --fail --retry 5 --retry-delay 3 "http://${DEPLOY_HOST}/hetong-api/health"

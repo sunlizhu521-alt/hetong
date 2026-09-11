@@ -1,0 +1,29 @@
+[Unit]
+Description=合同生成 FastAPI 服务
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/srv/hetong/repo/backend
+Environment=HETONG_DATA_DIR=/srv/hetong/data
+Environment=HETONG_LIBREOFFICE=/usr/bin/libreoffice
+Environment=HETONG_PDFTOPPM=/usr/bin/pdftoppm
+EnvironmentFile=-/srv/hetong/app.env
+ExecStart=/srv/hetong/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8010 --workers 1 --no-access-log
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=25
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=read-only
+ProtectSystem=strict
+ReadWritePaths=/srv/hetong/data /srv/hetong/repo/backend
+MemoryHigh=1200M
+MemoryMax=1400M
+TasksMax=128
+
+[Install]
+WantedBy=multi-user.target

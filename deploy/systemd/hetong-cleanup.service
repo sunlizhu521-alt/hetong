@@ -1,0 +1,16 @@
+[Unit]
+Description=清理过期合同生成文件
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/srv/hetong/repo/backend
+Environment=HETONG_DATA_DIR=/srv/hetong/data
+ExecStart=/srv/hetong/venv/bin/python -m app.cleanup
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=read-only
+ProtectSystem=strict
+ReadWritePaths=/srv/hetong/data
