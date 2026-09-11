@@ -12,6 +12,7 @@ fi
 if [[ ! -d "$repo_dir/.git" ]]; then
   git clone https://github.com/sunlizhu521-alt/hetong.git "$repo_dir"
 fi
+chown -R root:root "$repo_dir"
 
 git -C "$repo_dir" fetch --prune origin
 previous_revision=$(git -C "$repo_dir" rev-parse HEAD 2>/dev/null || true)
@@ -34,7 +35,9 @@ install -d -o ubuntu -g ubuntu -m 0755 /srv/hetong/frontend
 chmod 0755 /srv/hetong
 find /srv/hetong/frontend -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
 cp -a "$repo_dir/frontend/dist/." /srv/hetong/frontend/
-chown -R ubuntu:ubuntu /srv/hetong
+chown root:root /srv/hetong
+chown -R root:root "$repo_dir"
+chown -R ubuntu:ubuntu /srv/hetong/data /srv/hetong/frontend
 
 install -m 0644 "$repo_dir/deploy/systemd/hetong.service" /etc/systemd/system/hetong.service
 install -m 0644 "$repo_dir/deploy/systemd/hetong-cleanup.service" /etc/systemd/system/hetong-cleanup.service
