@@ -10,6 +10,7 @@ WorkingDirectory=/srv/hetong/repo/backend
 Environment=HETONG_DATA_DIR=/srv/hetong/data
 Environment=HETONG_LIBREOFFICE=/usr/bin/libreoffice
 Environment=HETONG_PDFTOPPM=/usr/bin/pdftoppm
+Environment=PYTHONDONTWRITEBYTECODE=1
 EnvironmentFile=-/srv/hetong/app.env
 ExecStart=/srv/hetong/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8010 --workers 1 --no-access-log
 Restart=on-failure
@@ -20,7 +21,10 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectHome=read-only
 ProtectSystem=strict
-ReadWritePaths=/srv/hetong/data /srv/hetong/repo/backend
+ReadWritePaths=/srv/hetong/data
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+IPAddressAllow=localhost
+IPAddressDeny=any
 MemoryHigh=1200M
 MemoryMax=1400M
 TasksMax=128

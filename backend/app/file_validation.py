@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import zipfile
 from pathlib import Path
+from xml.etree import ElementTree
 
 from fastapi import HTTPException
 
@@ -49,5 +50,20 @@ def validate_file(path: Path, extension: str) -> None:
                 raise HTTPException(status_code=415, detail="Office 文件结构不完整")
             if any(name.endswith("vbaProject.bin") for name in names):
                 raise HTTPException(status_code=415, detail="不支持包含宏的 Office 文件")
+            for name in names:
+                if not name.endswith(".rels"):
+                    continue
+                try:
+                    relationships = ElementTree.fromstring(archive.read(name))
+                except ElementTree.ParseError as exc:
+                    raise HTTPException(status_code=415, detail="Office 关系文件已损坏") from exc
+                if any(
+                    relation.attrib.get("TargetMode", "").lower() == "external"
+                    for relation in relationships
+                ):
+                    raise HTTPException(
+                        status_code=415,
+                        detail="Office 文件包含外部链接，请先移除后再上传",
+                    )
     except zipfile.BadZipFile as exc:
         raise HTTPException(status_code=415, detail="Office 文件已损坏") from exc

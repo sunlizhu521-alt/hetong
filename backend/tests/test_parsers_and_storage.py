@@ -1,4 +1,5 @@
 import time
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -6,6 +7,7 @@ from docx import Document
 from fastapi import HTTPException
 from openpyxl import Workbook
 
+from app.file_validation import validate_file
 from app.parsers import inspect_order, inspect_template, read_order_rows
 from app.storage import SessionStore
 
@@ -50,3 +52,30 @@ def test_expired_session_is_rejected_and_cleaned(tmp_path: Path):
     assert error.value.status_code == 410
     assert session_store.cleanup_expired() == 1
     assert not session.path.exists()
+
+
+def test_external_relationship_is_rejected(tmp_path: Path):
+    path = tmp_path / "虚构外链模板.xlsx"
+    workbook = Workbook()
+    workbook.save(path)
+    replacement = tmp_path / "rewritten.xlsx"
+    with zipfile.ZipFile(path) as source, zipfile.ZipFile(replacement, "w") as target:
+        for info in source.infolist():
+            payload = source.read(info.filename)
+            if info.filename == "_rels/.rels":
+                payload = payload.replace(
+                    b"</Relationships>",
+                    (
+                        b'<Relationship Id="rIdExternal" '
+                        b'Type="https://example.invalid/type" '
+                        b'Target="https://example.invalid/data" '
+                        b'TargetMode="External"/></Relationships>'
+                    ),
+                )
+            target.writestr(info, payload)
+    replacement.replace(path)
+
+    with pytest.raises(HTTPException) as error:
+        validate_file(path, ".xlsx")
+    assert error.value.status_code == 415
+    assert "外部链接" in error.value.detail
